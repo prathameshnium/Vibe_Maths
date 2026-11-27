@@ -1,0 +1,161 @@
+# Checks every proof in proofs/ exactly as the upstream Left to Solve checker does:
+#   1. lint   - file rules (single import, one OMA.solution/OMA.disproof, no sorry/axiom/native_decide, ...)
+#   2. check  - compile against the pinned formal-conjectures + Mathlib, then audit axioms
+#               (only propext, Classical.choice, Quot.sound allowed).
+# The upstream tools are taken from a pinned open-math-agents commit, so upstream changes never run here unreviewed.
+# To move the pin: update OMA_REF to a reviewed commit of GuillaumeBAUD-coder/open-math-agents.
+name: lean-check
+
+on:
+  push:
+    branches: [main]
+    paths: ["proofs/**", ".github/workflows/lean-check.yml"]
+  pull_request:
+    paths: ["proofs/**", ".github/workflows/lean-check.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OMA_REPO: GuillaumeBAUD-coder/open-math-agents
+  OMA_REF: 35d78b4b6b08a0ff019718b0017c4b6cd251904b
+
+jobs:
+  lint:
+    name: Lint proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      proofs: ${{ steps.list.outputs.proofs }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch pinned checker tools
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OMA_REPO }}
+          ref: ${{ env.OMA_REF }}
+          path: oma
+          sparse-checkout: |
+            tools
+            data
+
+      - name: List proofs
+        id: list
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(proofs/*.lean)
+          bad=0
+          for f in proofs/*; do
+            case "$(basename "$f")" in .gitkeep) continue ;; esac
+            if ! printf '%s' "$f" | grep -Eq "^proofs/[A-Za-z0-9_.'-]+\.lean$"; then
+              echo "::error file=$f::only proofs/<problem-id>.lean files belong in proofs/"; bad=1
+            fi
+          done
+          [ "$bad" = 0 ]
+          ids=$(for f in "${files[@]}"; do basename "$f" .lean; done | python3 -c 'import json,sys;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          echo "proofs=$ids" >> "$GITHUB_OUTPUT"
+          echo "Proofs: $ids"
+
+      - name: Lint each proof
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+          fail=0
+          for f in proofs/*.lean; do
+            if grep -q $'\r' "$f"; then echo "::error file=$f::CRLF line endings; use LF"; fail=1; fi
+            if python3 -I oma/tools/lint.py "$f" oma/data/catalog.json > /tmp/lint.json; then
+              echo "ok   $f"
+            else
+              echo "::error file=$f::$(python3 -I -c 'import json;print("; ".join(json.load(open("/tmp/lint.json"))["errors"]))')"
+              fail=1
+            fi
+          done
+          exit $fail
+
+  check:
+    name: Compile and audit axioms
+    needs: lint
+    if: needs.lint.outputs.proofs != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ELAN_HOME: /mnt/oma/elan
+      OMA_FC: /mnt/oma/fc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: vibe
+
+      - name: Fetch pinned checker
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OMA_REPO }}
+          ref: ${{ env.OMA_REF }}
+          path: oma
+          sparse-checkout: |
+            tools
+            data
+            reductions
+            statements
+
+      - name: Pinned formal-conjectures
+        id: fc
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /mnt/oma && sudo chown "$(id -u):$(id -g)" /mnt/oma
+          C=$(python3 -I -c 'import json;print(json.load(open("oma/data/catalog.json"))["meta"]["upstreamCommit"])')
+          echo "commit=$C" >> "$GITHUB_OUTPUT"
+          git init -q "$OMA_FC" && cd "$OMA_FC"
+          git remote add origin https://github.com/google-deepmind/formal-conjectures
+          git fetch -q --depth 1 origin "$C" && git checkout -q FETCH_HEAD
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /mnt/oma/elan
+            /mnt/oma/fc/.lake
+          key: lean-${{ runner.os }}-${{ steps.fc.outputs.commit }}
+
+      - name: Lean toolchain and Mathlib cache
+        run: |
+          set -euo pipefail
+          echo "$ELAN_HOME/bin" >> "$GITHUB_PATH"
+          retry() { for i in 1 2 3 4; do "$@" && return 0; echo "attempt $i failed: $*"; sleep $((i * 20)); done; return 1; }
+          if [ ! -x "$ELAN_HOME/bin/lake" ]; then
+            retry curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+            retry sh /tmp/elan-init.sh -y --default-toolchain none
+          fi
+          cd "$OMA_FC" && retry "$ELAN_HOME/bin/lake" exe cache get
+
+      - name: Check every proof
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+          mkdir -p oma/proofs
+          fail=0
+          {
+            echo "| Proof | Verdict | Reason |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for f in vibe/proofs/*.lean; do
+            id=$(basename "$f" .lean)
+            cp "$f" "oma/proofs/$id.lean"
+            (cd oma && tools/check.sh "proofs/$id.lean" "/tmp/$id.verdict.json") || true
+            v=$(python3 -I -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["verdict"]+"\t"+d["reason"])' "/tmp/$id.verdict.json" 2>/dev/null || printf 'fault\tno verdict produced')
+            verdict=${v%%$'\t'*}; reason=${v#*$'\t'}
+            echo "$verdict  $id  ($reason)"
+            echo "| \`$id\` | $verdict | $reason |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$verdict" != accepted ]; then
+              echo "::error file=proofs/$id.lean::$verdict: $reason"
+              python3 -I -c 'import json,sys;print(json.load(open(sys.argv[1])).get("log","")[-3000:])' "/tmp/$id.verdict.json" 2>/dev/null || true
+              fail=1
+            fi
+          done
+          exit $fail

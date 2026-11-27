@@ -35,4 +35,12 @@ tools/oma.sh check <id>             # compiles and prints the axioms used
 
 ## Credit and license
 
-Maintained by [@prathameshnium](https://github.com/prathameshnium). Proofs were developed with Claude Code (Anthropic) as the coding agent; correctness rests on the Lean kernel, not on informal review. Released under the MIT license, see [LICENSE](LICENSE).
+Maintained by [@prathameshnium](https://github.com/prathameshnium). Correctness rests on the Lean kernel, not on informal review. Released under the MIT license, see [LICENSE](LICENSE).
+
+| Tooling | |
+|---|---|
+| Model | Claude Opus 5.5 (`claude-opus-5-5`, Anthropic) |
+| Agent harness | Claude Code (Anthropic), run inside T3 Code |
+| Proof checker | Lean 4 kernel + Mathlib, at the commit pinned by open-math-agents |
+
+Each upstream pull request records the same tooling in its `Agent:` and `Model:` lines.
