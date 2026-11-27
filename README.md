@@ -1,46 +1,38 @@
 # Vibe_Maths
 
-Machine-checked proofs of mathematical statements, written in [Lean 4](https://lean-lang.org/) with [Mathlib](https://github.com/leanprover-community/mathlib4).
+Machine-checked proofs of mathematical statements in [Lean 4](https://lean-lang.org/) with [Mathlib](https://github.com/leanprover-community/mathlib4).
 
-Each target is a theorem from [google-deepmind/formal-conjectures](https://github.com/google-deepmind/formal-conjectures), taken through the [Left to Solve](https://lefttosolve.com) project. A proof counts only if the Lean kernel accepts it with no `sorry` and no axioms beyond `propext`, `Classical.choice` and `Quot.sound`.
+Targets are theorem statements from [google-deepmind/formal-conjectures](https://github.com/google-deepmind/formal-conjectures), taken via the [Left to Solve](https://lefttosolve.com) project. Proofs are submitted as pull requests to [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents), whose CI checker compiles them. A proof counts only if the Lean kernel accepts it with no `sorry` and no axioms beyond `propext`, `Classical.choice` and `Quot.sound`.
 
 ## Results
 
-| Problem | Kind | File | Upstream status |
+| Problem | Kind | File | Status |
 |---|---|---|---|
 | _none yet_ | | | |
 
-Status meanings:
+- **submitted**: compiles and passes the axiom check locally; pull request open upstream.
+- **accepted**: merged upstream after the CI checker passed.
+- **rejected**: refused by the upstream checker; the reason is linked.
 
-- **submitted**: compiled and axiom-checked locally; pull request open upstream.
-- **accepted**: merged into [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents) after the project's CI checker passed.
-- **rejected**: the upstream checker refused it (the reason is linked).
-
-"Known" results are published theorems formalized here for the first time in Lean. They are not new mathematics, and are labelled as such.
+Results of kind "known" are published theorems formalized in Lean. They are not new mathematics.
 
 ## Layout
 
 ```
-proofs/<problem-id>.lean   one self-contained proof per problem, exactly as submitted upstream
+proofs/<problem-id>.lean   one self-contained file per problem, identical to the upstream submission
 ```
 
-Each file starts with the import line of the upstream problem file and proves
-`theorem OMA.solution : type_of% @<declaration>`, which pins the statement to the upstream one character for character.
+Each file starts with the import line of the upstream problem file and proves `theorem OMA.solution : type_of% @<declaration>` (or `OMA.disproof : ¬ ...`), which pins the statement exactly to the upstream one.
 
-## Checking a proof yourself
+## Verify a proof
 
 ```sh
-git clone https://github.com/GuillaumeBAUD-coder/open-math-agents
-cd open-math-agents
-tools/oma.sh setup                      # formal-conjectures at the pinned commit + Mathlib cache
+git clone https://github.com/GuillaumeBAUD-coder/open-math-agents && cd open-math-agents
+tools/oma.sh setup                  # formal-conjectures at the pinned commit + Mathlib cache
 cp ../Vibe_Maths/proofs/<id>.lean proofs/
-tools/oma.sh check <id>                 # compiles and prints the axioms used
+tools/oma.sh check <id>             # compiles and prints the axioms used
 ```
 
-## Credit
+## Credit and license
 
-Author: [@prathameshnium](https://github.com/prathameshnium). Proofs were developed with Claude Code (Anthropic) as the coding agent; every one is verified by the Lean kernel, not by review of an informal argument.
-
-## License
-
-MIT, see [LICENSE](LICENSE).
+Maintained by [@prathameshnium](https://github.com/prathameshnium). Proofs were developed with Claude Code (Anthropic) as the coding agent; correctness rests on the Lean kernel, not on informal review. Released under the MIT license, see [LICENSE](LICENSE).
