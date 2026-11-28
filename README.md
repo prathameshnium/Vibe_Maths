@@ -10,8 +10,10 @@
 
 [![Lean](https://img.shields.io/badge/Lean-v4.33.1-0f4c81)](https://lean-lang.org/)
 [![Mathlib](https://img.shields.io/badge/Mathlib-pinned%20by%20open--math--agents-5c2d91)](https://github.com/leanprover-community/mathlib4)
-[![Left to Solve](https://img.shields.io/badge/Left%20to%20Solve-%40prathameshnium-2e7d32)](https://lefttosolve.com)
+[![Left to Solve](https://img.shields.io/badge/Left%20to%20Solve-%40prathameshnium-2e7d32)](https://lefttosolve.com/a/prathameshnium)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+**Profile and score:** [lefttosolve.com/a/prathameshnium](https://lefttosolve.com/a/prathameshnium)
 
 </div>
 
@@ -81,7 +83,7 @@ tools/oma.sh check <id>                         # compiles and prints the axioms
 
 ## Credit and license
 
-Maintained by [@prathameshnium](https://github.com/prathameshnium). Correctness rests on the Lean kernel, not on informal review. Released under the [MIT license](LICENSE).
+Maintained by [@prathameshnium](https://github.com/prathameshnium) ([Left to Solve profile](https://lefttosolve.com/a/prathameshnium)). Correctness rests on the Lean kernel, not on informal review. Released under the [MIT license](LICENSE).
 
 | Tooling | |
 |---|---|
