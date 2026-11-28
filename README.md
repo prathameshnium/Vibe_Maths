@@ -23,7 +23,7 @@ Targets are theorem statements from [google-deepmind/formal-conjectures](https:/
 |---|:---:|---|
 | 🧩 Reductions | **3** | open conjectures split into a finite range plus an open rest, all merged upstream |
 | 📝 Statements | **1** | a formal statement written for a problem that had none; upstream merged an identical one from another contributor |
-| ✅ Proofs | **0** | none merged yet |
+| ✅ Proofs | **2** | finite `H1` steps of our own reductions, submitted upstream, none merged yet |
 
 ## Reductions
 
@@ -51,7 +51,10 @@ Formal statements (a theorem with `sorry`, no proof) contributed upstream for pr
 
 | Problem | Kind | File | Status |
 |---|---|---|---|
-| _none yet_ | | | |
+| [A232194 · 4 · H1](https://lefttosolve.com/p/OeisA232194.conjecture_4.R1.H1) | reduction step: `1 < n ≤ 1000`, `n ≠ 8`, kernel-checked search | [`.R1.H1.lean`](proofs/OeisA232194.conjecture_4.R1.H1.lean) | 🟡 submitted, [#28344](https://github.com/lefttosolve2/open-math-agents/pull/28344) |
+| [Dubner · H1](https://lefttosolve.com/p/DubnerConjecture.dubner_conjecture.R1.H1) | reduction step: even `4208 < n ≤ 10000`, kernel-checked witness table | [`.R1.H1.lean`](proofs/DubnerConjecture.dubner_conjecture.R1.H1.lean) | 🟡 submitted, [#28357](https://github.com/lefttosolve2/open-math-agents/pull/28357) |
+
+These prove the finite `H1` half of two of the reductions above. Each one checks every case in the Lean kernel with a trial-division primality test that is proved correct, so no `native_decide` is used. They prove the finite range only; the conjectures themselves stay open.
 
 Results of kind "known" are published theorems formalized in Lean. They are not new mathematics.
 
