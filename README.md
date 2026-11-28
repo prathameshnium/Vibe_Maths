@@ -16,6 +16,18 @@ Targets are theorem statements from [google-deepmind/formal-conjectures](https:/
 
 Results of kind "known" are published theorems formalized in Lean. They are not new mathematics.
 
+## Reductions
+
+A reduction splits an open problem into smaller statements `H1`, `H2` and proves, in Lean, that they imply the original. Once merged upstream, each `H` becomes its own problem. These three split an open conjecture at a bound `B`: `H1` is the finite range up to `B`, which a kernel-checked search can settle, and `H2` is everything above `B`, which stays open. None of them proves the conjecture.
+
+| Problem | Split | File | Pull request | Status |
+|---|---|---|---|---|
+| [OeisA232194.conjecture_4](https://lefttosolve.com/p/OeisA232194.conjecture_4) | `n * x ^ 2 + y` prime for some `x + y = n`: `H1` for `1 < n ≤ 1000` (`n ≠ 8`), `H2` for `n > 1000` | [reductions/OeisA232194.conjecture_4.R1.lean](reductions/OeisA232194.conjecture_4.R1.lean) | [open-math-agents#20573](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20573) | submitted |
+| [OeisA218656.conjecture_2](https://lefttosolve.com/p/OeisA218656.conjecture_2) | `x ^ 2 + (2n + 1 - x) ^ 2` prime for some `1 ≤ x ≤ n`: `H1` for `n ≤ 1000`, `H2` for `n > 1000` | [reductions/OeisA218656.conjecture_2.R1.lean](reductions/OeisA218656.conjecture_2.R1.lean) | [open-math-agents#20867](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20867) | submitted |
+| [DubnerConjecture.dubner_conjecture](https://lefttosolve.com/p/DubnerConjecture.dubner_conjecture) | every even `n > 4208` is a sum of two twin primes: `H1` for `n ≤ 10000`, `H2` for `n > 10000` | [reductions/DubnerConjecture.dubner_conjecture.R1.lean](reductions/DubnerConjecture.dubner_conjecture.R1.lean) | [open-math-agents#21163](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/21163) | submitted |
+
+Each file passed the local upstream checker (`kernel accepted; axioms within propext, Classical.choice, Quot.sound`). The finite-range proofs of the three `H1` steps can only be submitted after the reductions merge.
+
 ## Statements
 
 Formal statements (theorem with `sorry`, no proof) contributed upstream for problems that had none.
@@ -33,6 +45,7 @@ Notes on oeis-a083020:
 
 ```
 proofs/<problem-id>.lean       one self-contained file per problem, identical to the upstream submission
+reductions/<problem-id>.R<n>.lean  reductions submitted upstream, identical to the upstream file
 statements/<problem-id>.lean   formal statements submitted upstream, identical to the upstream file
 ```
 
