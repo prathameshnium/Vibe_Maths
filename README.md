@@ -22,9 +22,12 @@ Formal statements (theorem with `sorry`, no proof) contributed upstream for prob
 
 | Problem | Statement | File | Pull request | Status |
 |---|---|---|---|---|
-| [oeis-a083020](https://lefttosolve.com/p/oeis-a083020) | `∀ n : ℕ, Squarefree (3 ^ (3 ^ n) + 2)` (open conjecture) | [statements/oeis-a083020.lean](statements/oeis-a083020.lean) | [open-math-agents#17276](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17276) | submitted |
+| [oeis-a083020](https://lefttosolve.com/p/oeis-a083020) | `∀ n : ℕ, Squarefree (3 ^ (3 ^ n) + 2)` (OEIS conjecture, false) | [statements/oeis-a083020.lean](statements/oeis-a083020.lean) | [open-math-agents#17276](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17276) | submitted, upstream check queued |
 
-For oeis-a083020 an earlier statement PR from another contributor ([#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672)) is also open; upstream will merge at most one.
+Notes on oeis-a083020:
+
+- **The conjecture is false.** 29² divides 3^(3^n) + 2 for n = 73 and n = 157, which you can check by computing 3^(3^n) mod 841. The statement file encodes the conjecture as OEIS states it. It does not claim the conjecture is true.
+- **There is a second PR for the same problem.** [#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672) by another contributor was opened upstream first, at 01:09:31 UTC on 2026-11-28. This statement was committed and accepted by this repo's CI earlier, in commit [`830443d`](https://github.com/prathameshnium/Vibe_Maths/commit/830443d833fd3e68e9ce75d2c092a2400f78d79e) at 00:52:30 UTC, while the repo was still private. Both statements are mathematically identical. Upstream will merge at most one, and if it merges #16672, #17276 will be closed.
 
 ## Layout
 
