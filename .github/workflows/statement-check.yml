@@ -1,0 +1,101 @@
+# Checks a formalized statement (statements/<id>.lean) exactly as the upstream Left to Solve checker does:
+# lint, then compile against the pinned formal-conjectures + Mathlib. A statement keeps one sorry by design,
+# so it cannot go through lean-check.yml (which is for finished proofs).
+# Tools come from the same pinned open-math-agents commit as lean-check.yml.
+name: statement-check
+
+on:
+  push:
+    branches: [main]
+    paths: ["statements/**", ".github/workflows/statement-check.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: statement-check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OMA_REPO: GuillaumeBAUD-coder/open-math-agents
+  OMA_REF: 35d78b4b6b08a0ff019718b0017c4b6cd251904b
+
+jobs:
+  check:
+    name: Compile statements
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      ELAN_HOME: /mnt/oma/elan
+      OMA_FC: /mnt/oma/fc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: vibe
+
+      - name: Fetch pinned checker
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OMA_REPO }}
+          ref: ${{ env.OMA_REF }}
+          path: oma
+          sparse-checkout: |
+            tools
+            data
+            reductions
+            statements
+
+      - name: Pinned formal-conjectures
+        id: fc
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /mnt/oma && sudo chown "$(id -u):$(id -g)" /mnt/oma
+          C=$(python3 -I -c 'import json;print(json.load(open("oma/data/catalog.json"))["meta"]["upstreamCommit"])')
+          echo "commit=$C" >> "$GITHUB_OUTPUT"
+          git init -q "$OMA_FC" && cd "$OMA_FC"
+          git remote add origin https://github.com/google-deepmind/formal-conjectures
+          git fetch -q --depth 1 origin "$C" && git checkout -q FETCH_HEAD
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /mnt/oma/elan
+            /mnt/oma/fc/.lake
+          key: lean-${{ runner.os }}-${{ steps.fc.outputs.commit }}
+
+      - name: Lean toolchain and Mathlib cache
+        run: |
+          set -euo pipefail
+          echo "$ELAN_HOME/bin" >> "$GITHUB_PATH"
+          retry() { for i in 1 2 3 4; do "$@" && return 0; echo "attempt $i failed: $*"; sleep $((i * 20)); done; return 1; }
+          if [ ! -x "$ELAN_HOME/bin/lake" ]; then
+            retry curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+            retry sh /tmp/elan-init.sh -y --default-toolchain none
+          fi
+          cd "$OMA_FC" && retry "$ELAN_HOME/bin/lake" exe cache get
+
+      - name: Check every statement
+        run: |
+          set -uo pipefail
+          shopt -s nullglob
+          fail=0
+          {
+            echo "| Statement | Verdict | Reason |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for f in vibe/statements/*.lean; do
+            id=$(basename "$f" .lean)
+            cp "$f" "oma/statements/$id.lean"
+            (cd oma && tools/check.sh "statements/$id.lean" "/tmp/$id.verdict.json") || true
+            v=$(python3 -I -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["verdict"]+"\t"+d["reason"])' "/tmp/$id.verdict.json" 2>/dev/null || printf 'fault\tno verdict produced')
+            verdict=${v%%$'\t'*}; reason=${v#*$'\t'}
+            echo "$verdict  $id  ($reason)"
+            echo "| \`$id\` | $verdict | $reason |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$verdict" != accepted ]; then
+              echo "::error file=statements/$id.lean::$verdict: $reason"
+              python3 -I -c 'import json,sys;print(json.load(open(sys.argv[1])).get("log","")[-3000:])' "/tmp/$id.verdict.json" 2>/dev/null || true
+              fail=1
+            fi
+          done
+          exit $fail
