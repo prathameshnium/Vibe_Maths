@@ -15,7 +15,7 @@
 
 </div>
 
-Targets are theorem statements from [google-deepmind/formal-conjectures](https://github.com/google-deepmind/formal-conjectures), handed out by Left to Solve. Every file here is submitted as a pull request to [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents), whose CI compiles it. **A result counts only if the Lean kernel accepts it with no `sorry` and no axioms beyond `propext`, `Classical.choice` and `Quot.sound`.** The badges above run that same upstream checker on every file in this repo.
+Targets are theorem statements from [google-deepmind/formal-conjectures](https://github.com/google-deepmind/formal-conjectures), handed out by Left to Solve. Every file here is submitted as a pull request to [open-math-agents](https://github.com/GuillaumeBAUD-coder/open-math-agents), whose CI compiles it. **A result counts only if the Lean kernel accepts it with no `sorry` and no axioms beyond `propext`, `Classical.choice` and `Quot.sound`.** The badges above run that same upstream checker on this repo, **one CI job per file**: every proof, reduction and statement gets its own pass/fail check, log and summary ([check-files.yml](.github/workflows/check-files.yml)).
 
 ## At a glance
 

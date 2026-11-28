@@ -1,0 +1,143 @@
+# Reusable: runs the upstream Left to Solve checker on every .lean file of one folder, ONE JOB PER FILE.
+# Each file gets its own check run (its own pass/fail, log and summary), and fail-fast is off, so one bad file
+# never hides another. Per file, tools/check.sh does exactly what upstream CI does:
+#   lint (file rules; no sorry/admit/axiom/native_decide/unsafe; target pinned with type_of% @<decl>)
+#   -> compile against the pinned formal-conjectures + Mathlib -> audit axioms (propext, Classical.choice,
+#   Quot.sound only).
+# The tools come from a pinned open-math-agents commit, so upstream changes never run here unreviewed.
+# To move the pin: update OMA_REF to a reviewed commit of GuillaumeBAUD-coder/open-math-agents.
+name: check-files
+
+on:
+  workflow_call:
+    inputs:
+      dir:
+        description: "proofs, reductions or statements"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  OMA_REPO: GuillaumeBAUD-coder/open-math-agents
+  OMA_REF: 35d78b4b6b08a0ff019718b0017c4b6cd251904b
+
+jobs:
+  discover:
+    name: List ${{ inputs.dir }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ids: ${{ steps.list.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files and check names and line endings
+        id: list
+        env:
+          DIR: ${{ inputs.dir }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bad=0
+          for f in "$DIR"/*; do
+            case "$(basename "$f")" in .gitkeep) continue ;; esac
+            if ! printf '%s' "$f" | grep -Eq "^$DIR/[A-Za-z0-9_.'-]+\.lean$"; then
+              echo "::error file=$f::only $DIR/<id>.lean files belong in $DIR/"; bad=1
+            elif grep -q $'\r' "$f"; then
+              echo "::error file=$f::CRLF line endings; use LF"; bad=1
+            fi
+          done
+          [ "$bad" = 0 ]
+          ids=$(for f in "$DIR"/*.lean; do basename "$f" .lean; done | python3 -I -c 'import json,sys;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
+          echo "Files in $DIR: $ids"
+
+  check:
+    name: ${{ matrix.id }}
+    needs: discover
+    if: needs.discover.outputs.ids != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        id: ${{ fromJSON(needs.discover.outputs.ids) }}
+    env:
+      ELAN_HOME: /mnt/oma/elan
+      OMA_FC: /mnt/oma/fc
+      DIR: ${{ inputs.dir }}
+      ID: ${{ matrix.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: vibe
+
+      - name: Fetch pinned checker
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.OMA_REPO }}
+          ref: ${{ env.OMA_REF }}
+          path: oma
+          sparse-checkout: |
+            tools
+            data
+            reductions
+            statements
+
+      - name: Pinned formal-conjectures
+        id: fc
+        run: |
+          set -euo pipefail
+          sudo mkdir -p /mnt/oma && sudo chown "$(id -u):$(id -g)" /mnt/oma
+          C=$(python3 -I -c 'import json;print(json.load(open("oma/data/catalog.json"))["meta"]["upstreamCommit"])')
+          echo "commit=$C" >> "$GITHUB_OUTPUT"
+          git init -q "$OMA_FC" && cd "$OMA_FC"
+          git remote add origin https://github.com/google-deepmind/formal-conjectures
+          git fetch -q --depth 1 origin "$C" && git checkout -q FETCH_HEAD
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            /mnt/oma/elan
+            /mnt/oma/fc/.lake
+          key: lean-${{ runner.os }}-${{ steps.fc.outputs.commit }}
+
+      - name: Lean toolchain and Mathlib cache
+        run: |
+          set -euo pipefail
+          echo "$ELAN_HOME/bin" >> "$GITHUB_PATH"
+          retry() { for i in 1 2 3 4; do "$@" && return 0; echo "attempt $i failed: $*"; sleep $((i * 20)); done; return 1; }
+          if [ ! -x "$ELAN_HOME/bin/lake" ]; then
+            retry curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+            retry sh /tmp/elan-init.sh -y --default-toolchain none
+          fi
+          cd "$OMA_FC" && retry "$ELAN_HOME/bin/lake" exe cache get
+
+      - name: Check ${{ matrix.id }}
+        run: |
+          set -uo pipefail
+          # This repo's own reductions and statements are made importable, exactly as upstream does with merged
+          # ones, so a step proof (proofs/<X>.R<n>.H<k>.lean) can import the reduction it proves a step of.
+          mkdir -p oma/proofs oma/reductions oma/statements
+          cp vibe/reductions/*.lean oma/reductions/ 2>/dev/null || true
+          cp vibe/statements/*.lean oma/statements/ 2>/dev/null || true
+          cp "vibe/$DIR/$ID.lean" "oma/$DIR/$ID.lean"
+          (cd oma && tools/check.sh "$DIR/$ID.lean" /tmp/verdict.json) || true
+          v=$(python3 -I -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["verdict"]+"\t"+d["reason"])' /tmp/verdict.json 2>/dev/null || printf 'fault\tno verdict produced')
+          verdict=${v%%$'\t'*}; reason=${v#*$'\t'}
+          echo "$verdict: $ID ($reason)"
+          {
+            echo "### \`$DIR/$ID.lean\`"
+            echo
+            echo "| Verdict | Reason |"
+            echo "|---|---|"
+            echo "| **$verdict** | $reason |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$verdict" != accepted ]; then
+            echo "::error file=$DIR/$ID.lean::$verdict: $reason"
+            python3 -I -c 'import json,sys;print(json.load(open(sys.argv[1])).get("log","")[-3000:])' /tmp/verdict.json 2>/dev/null || true
+            exit 1
+          fi
