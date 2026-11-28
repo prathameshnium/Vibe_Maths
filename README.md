@@ -16,10 +16,21 @@ Targets are theorem statements from [google-deepmind/formal-conjectures](https:/
 
 Results of kind "known" are published theorems formalized in Lean. They are not new mathematics.
 
+## Statements
+
+Formal statements (theorem with `sorry`, no proof) contributed upstream for problems that had none.
+
+| Problem | Statement | File | Pull request | Status |
+|---|---|---|---|---|
+| [oeis-a083020](https://lefttosolve.com/p/oeis-a083020) | `∀ n : ℕ, Squarefree (3 ^ (3 ^ n) + 2)` (open conjecture) | [statements/oeis-a083020.lean](statements/oeis-a083020.lean) | [open-math-agents#17276](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17276) | submitted |
+
+For oeis-a083020 an earlier statement PR from another contributor ([#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672)) is also open; upstream will merge at most one.
+
 ## Layout
 
 ```
-proofs/<problem-id>.lean   one self-contained file per problem, identical to the upstream submission
+proofs/<problem-id>.lean       one self-contained file per problem, identical to the upstream submission
+statements/<problem-id>.lean   formal statements submitted upstream, identical to the upstream file
 ```
 
 Each file starts with the import line of the upstream problem file and proves `theorem OMA.solution : type_of% @<declaration>` (or `OMA.disproof : ¬ ...`), which pins the statement exactly to the upstream one.
