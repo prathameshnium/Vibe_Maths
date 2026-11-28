@@ -21,8 +21,8 @@ Targets are theorem statements from [google-deepmind/formal-conjectures](https:/
 
 | | Count | What it means |
 |---|:---:|---|
-| 🧩 Reductions | **3** | open conjectures split into a finite range plus an open rest, submitted upstream |
-| 📝 Statements | **1** | a formal statement written for a problem that had none, submitted upstream |
+| 🧩 Reductions | **3** | open conjectures split into a finite range plus an open rest, all merged upstream |
+| 📝 Statements | **1** | a formal statement written for a problem that had none; upstream merged an identical one from another contributor |
 | ✅ Proofs | **0** | none merged yet |
 
 ## Reductions
@@ -31,11 +31,11 @@ A reduction splits an open problem into smaller statements `H1`, `H2` and proves
 
 | Problem | Conjecture | Split | File | Pull request | Status |
 |---|---|---|---|---|---|
-| [A232194 · 4](https://lefttosolve.com/p/OeisA232194.conjecture_4) | `n * x ^ 2 + y` is prime for some `x + y = n` | `H1`: `1 < n ≤ 1000`, `n ≠ 8` · `H2`: `n > 1000` | [`.R1.lean`](reductions/OeisA232194.conjecture_4.R1.lean) | [#20573](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20573) | 🟡 submitted |
-| [A218656 · 2](https://lefttosolve.com/p/OeisA218656.conjecture_2) | `x ^ 2 + (2n + 1 - x) ^ 2` is prime for some `1 ≤ x ≤ n` | `H1`: `n ≤ 1000` · `H2`: `n > 1000` | [`.R1.lean`](reductions/OeisA218656.conjecture_2.R1.lean) | [#20867](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20867) | 🟡 submitted |
-| [Dubner](https://lefttosolve.com/p/DubnerConjecture.dubner_conjecture) | every even `n > 4208` is a sum of two twin primes | `H1`: `n ≤ 10000` · `H2`: `n > 10000` | [`.R1.lean`](reductions/DubnerConjecture.dubner_conjecture.R1.lean) | [#21163](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/21163) | 🟡 submitted |
+| [A232194 · 4](https://lefttosolve.com/p/OeisA232194.conjecture_4) | `n * x ^ 2 + y` is prime for some `x + y = n` | `H1`: `1 < n ≤ 1000`, `n ≠ 8` · `H2`: `n > 1000` | [`.R1.lean`](reductions/OeisA232194.conjecture_4.R1.lean) | [#20573](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20573) | ✅ accepted |
+| [A218656 · 2](https://lefttosolve.com/p/OeisA218656.conjecture_2) | `x ^ 2 + (2n + 1 - x) ^ 2` is prime for some `1 ≤ x ≤ n` | `H1`: `n ≤ 1000` · `H2`: `n > 1000` | [`.R1.lean`](reductions/OeisA218656.conjecture_2.R1.lean) | [#20867](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/20867) | ✅ accepted |
+| [Dubner](https://lefttosolve.com/p/DubnerConjecture.dubner_conjecture) | every even `n > 4208` is a sum of two twin primes | `H1`: `n ≤ 10000` · `H2`: `n > 10000` | [`.R1.lean`](reductions/DubnerConjecture.dubner_conjecture.R1.lean) | [#21163](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/21163) | ✅ accepted |
 
-All three passed the upstream checker locally: `kernel accepted; axioms within propext, Classical.choice, Quot.sound`.
+All three were merged upstream on 2026-11-28 after the upstream CI passed (`kernel accepted; axioms within propext, Classical.choice, Quot.sound`). On Left to Solve each `H` is now its own problem. A merged reduction earns no points by itself. Its author is credited only once every step is proved.
 
 ## Statements
 
@@ -43,9 +43,9 @@ Formal statements (a theorem with `sorry`, no proof) contributed upstream for pr
 
 | Problem | Statement | File | Pull request | Status |
 |---|---|---|---|---|
-| [oeis-a083020](https://lefttosolve.com/p/oeis-a083020) | `∀ n : ℕ, Squarefree (3 ^ (3 ^ n) + 2)` | [`oeis-a083020.lean`](statements/oeis-a083020.lean) | [#17276](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17276) | 🟡 submitted, upstream CI passed |
+| [oeis-a083020](https://lefttosolve.com/p/oeis-a083020) | `∀ n : ℕ, Squarefree (3 ^ (3 ^ n) + 2)` | [`oeis-a083020.lean`](statements/oeis-a083020.lean) | [#17276](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/17276) | ⚪ superseded by [#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672) |
 
-> **Note on oeis-a083020.** The OEIS conjecture is **false**: 29² divides 3^(3^n) + 2 at n = 73 and n = 157, as computing 3^(3^n) mod 841 shows. The file states the conjecture as OEIS gives it and does not claim it is true. A second PR for the same problem, [#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672), was opened upstream first (01:09:31 UTC, 2026-11-28); this statement was committed and accepted by this repo's CI earlier, in [`830443d`](https://github.com/prathameshnium/Vibe_Maths/commit/830443d833fd3e68e9ce75d2c092a2400f78d79e) (00:52:30 UTC), while the repo was private. The two statements are identical, and upstream will merge at most one.
+> **Note on oeis-a083020.** The OEIS conjecture is **false**: 29² divides 3^(3^n) + 2 at n = 73 and n = 157, as computing 3^(3^n) mod 841 shows. The file states the conjecture as OEIS gives it and does not claim it is true. A second PR for the same problem, [#16672](https://github.com/GuillaumeBAUD-coder/open-math-agents/pull/16672), was opened upstream first (01:09:31 UTC, 2026-11-28); this statement was committed and accepted by this repo's CI earlier, in [`830443d`](https://github.com/prathameshnium/Vibe_Maths/commit/830443d833fd3e68e9ce75d2c092a2400f78d79e) (00:52:30 UTC), while the repo was private. The two statements are identical. Upstream merged #16672 on 2026-11-28 at 08:37 UTC, so this one is a duplicate.
 
 ## Proofs
 
@@ -55,7 +55,7 @@ Formal statements (a theorem with `sorry`, no proof) contributed upstream for pr
 
 Results of kind "known" are published theorems formalized in Lean. They are not new mathematics.
 
-**Status key:** 🟡 **submitted**, passes the checker locally and the pull request is open upstream · ✅ **accepted**, merged upstream after its CI passed · ❌ **rejected**, refused by the upstream checker (reason linked).
+**Status key:** 🟡 **submitted**, passes the checker locally and the pull request is open upstream · ✅ **accepted**, merged upstream after its CI passed · ❌ **rejected**, refused by the upstream checker (reason linked) · ⚪ **superseded**, passed the checker, but upstream merged an identical file from another contributor.
 
 ## Layout
 
